@@ -68,11 +68,11 @@ class ClaudeClient:
         )
 
         logger.info(
-            "llm_request_completed"
-            "model=%s"
-            "input_tokens=%d"
-            "output_tokens=%d"
-            "total_tokens=%d"
+            "llm_request_completed "
+            "model=%s "
+            "input_tokens=%d "
+            "output_tokens=%d "
+            "total_tokens=%d "
             "latency_ms=%.2f",
             result.model,
             result.input_tokens,
