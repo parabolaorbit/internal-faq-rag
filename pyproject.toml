@@ -1,0 +1,14 @@
+[project]
+name = "internal-faq-rag"
+version = "0.1.0"
+description = "Internal FAQ assistant using RAG and Claude"
+requires-python = ">=3.11"
+
+dependencies = [
+    "anthropic",
+    "pydantic-settings",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
