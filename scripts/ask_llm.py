@@ -2,6 +2,7 @@ import logging
 import sys
 
 from faq_rag.llm_client import ClaudeClient
+from faq_rag.prompt_types import PromptType
 
 def configure_logging() -> None:
     logging.basicConfig(
@@ -17,6 +18,17 @@ def configure_logging() -> None:
 def main() -> int:
     configure_logging()
 
+    selected_option = input("どのPromptを使用しますか？" + "\r\n".join([
+        f"{i+1}. {prompt_type.value}"
+        for i, prompt_type in enumerate(PromptType)
+    ]) + "\r\n")
+
+    if not selected_option.isdigit() or not (1 <= int(selected_option) <= len(PromptType)):
+        print("無効な選択です。")
+        return 1
+
+    prompt_type = list(PromptType)[int(selected_option) - 1]
+
     question = input("質問を入力してください: ").strip()
 
     if not question:
@@ -25,7 +37,7 @@ def main() -> int:
 
     try:
         client = ClaudeClient()
-        result = client.answer_question(question)
+        result = client.answer_question(question, prompt_type=prompt_type)
 
     except ValueError as exc:
         print(f"入力エラー: {exc}")
