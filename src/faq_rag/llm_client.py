@@ -41,7 +41,7 @@ class ClaudeClient:
         response = self.client.messages.create(
             model=self.settings.anthropic_model,
             max_tokens=1024,
-            system=builder.build_system_prompt(prompt_type=prompt_type.value),
+            system=builder.build_system_prompt(prompt_type=prompt_type),
             messages=[
                 {
                     "role": "user",
