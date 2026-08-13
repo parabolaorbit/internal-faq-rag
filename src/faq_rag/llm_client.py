@@ -5,6 +5,8 @@ from time import perf_counter
 from anthropic import Anthropic
 
 from faq_rag.config import Settings, get_settings
+from faq_rag.prompt_builder import PromptBuilder
+from faq_rag.prompt_types import PromptType
 
 logger = logging.getLogger(__name__)
 
@@ -27,22 +29,19 @@ class ClaudeClient:
             api_key=self.settings.anthropic_api_key.get_secret_value()
         )
 
-    def answer_question(self, question: str) -> LLMAnswer:
+    def answer_question(self, question: str, prompt_type: PromptType) -> LLMAnswer:
         normalized_question = question.strip()
 
         if not normalized_question:
             raise ValueError("Question must not be empty")
 
+        builder = PromptBuilder()
         start_at = perf_counter()
 
         response = self.client.messages.create(
             model=self.settings.anthropic_model,
             max_tokens=1024,
-            system=(
-                "あなたは社内FAQの回答アシスタントです。"
-                "質問に対して簡潔で分かりやすい日本語で回答してください。"
-                "与えられていない社内情報を推測しないでください。"
-            ),
+            system=builder.build_system_prompt(prompt_type=prompt_type),
             messages=[
                 {
                     "role": "user",
