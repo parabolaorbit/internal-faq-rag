@@ -1,12 +1,15 @@
 import logging
 from dataclasses import dataclass
 from time import perf_counter
+import json
+from pydantic import ValidationError
 
 from anthropic import Anthropic
 
 from faq_rag.config import Settings, get_settings
 from faq_rag.prompt_builder import PromptBuilder
 from faq_rag.prompt_types import PromptType
+from faq_rag.schemas import FAQAnswer
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +83,35 @@ class ClaudeClient:
             result.latency_ms,
         )
         return result
+
+    def answer_question_structured(
+            self,
+            question: str,
+    ) -> FAQAnswer:
+        result = self.answer_question(
+            question=question,
+            prompt_type=PromptType.STRUCTURED_FAQ
+        )
+
+        try:
+            answer = result.answer.strip()
+            if answer.startswith("```json") and answer.endswith("```"):
+                answer = answer[len("```json"):-len("```")].strip()
+            elif answer.startswith("```") and answer.endswith("```"):
+                answer = answer[len("```"):-len("```")].strip()
+            payload = json.loads(answer)
+
+            return FAQAnswer.model_validate(payload)
+        except json.JSONDecodeError as exc:
+            print(f"Invalid JSON returned by Claude: {answer}")
+            raise ValueError(
+                "Claude returned invalid JSON"
+            ) from exc
+        except ValidationError as exc:
+            print(f"Invalid structured output returned by Claude: {answer}")
+            raise ValueError(
+                "Claude returned invalid structured output"
+            ) from exc
 
     @staticmethod
     def _extract_text(content_blocks) -> str:
