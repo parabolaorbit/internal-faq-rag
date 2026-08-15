@@ -12,6 +12,7 @@ class PromptBuilder:
         PromptType.BEGINNER: "beginner_prompt.txt",
         PromptType.BULLET: "bullet_prompt.txt",
         PromptType.SUMMARY: "summarize_prompt.txt",
+        PromptType.STRUCTURED_FAQ: "structured_faq_prompt.txt",
     }
     
     def _read_prompt(self, filename: str) -> str:

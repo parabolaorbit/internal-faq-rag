@@ -6,3 +6,4 @@ class PromptType(Enum):
     BEGINNER = "beginner"
     BULLET = "bullet"
     SUMMARY = "summary"
+    STRUCTURED_FAQ = "structured_faq"
