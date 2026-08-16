@@ -63,10 +63,8 @@ class ClaudeClient:
             None,
         )
 
-        input_tokens = first_response.usage.input_tokens
-        output_tokens = first_response.usage.output_tokens
-        estimated_cost = Pricing().estimate_cost(input_tokens=input_tokens, output_tokens=output_tokens)
-        print(f"estimated_cost is {estimated_cost}")
+        total_input_tokens = first_response.usage.input_tokens
+        total_output_tokens = first_response.usage.output_tokens
 
         if tool_use is None:
             response = first_response
@@ -103,13 +101,14 @@ class ClaudeClient:
                 ],
             )
 
+            total_input_tokens += response.usage.input_tokens
+            total_output_tokens += response.usage.output_tokens
+
         latency_ms = (perf_counter() - start_at) * 1000
 
         answer = self._extract_text(response.content)
 
-        input_tokens = response.usage.input_tokens
-        output_tokens = response.usage.output_tokens
-        estimated_cost = Pricing().estimate_cost(input_tokens=input_tokens, output_tokens=output_tokens)
+        estimated_cost = Pricing().estimate_cost(input_tokens=total_input_tokens, output_tokens=total_output_tokens)
         print(f"estimated_cost is {estimated_cost}")
 
         # result
