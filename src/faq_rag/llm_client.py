@@ -1,4 +1,3 @@
-import logging
 from dataclasses import dataclass
 from time import perf_counter
 import json
@@ -10,9 +9,10 @@ from faq_rag.config import Settings, get_settings
 from faq_rag.prompt_builder import PromptBuilder
 from faq_rag.prompt_types import PromptType
 from faq_rag.schemas import FAQAnswer
-from faq_rag.tool_registry import TOOL_DEFINITIONS, TOOL_FUNCTIONS
 
-logger = logging.getLogger(__name__)
+from faq_rag.tool_registry import TOOL_DEFINITIONS, TOOL_FUNCTIONS
+from faq_rag.cost_calculator import Pricing
+from faq_rag.usage_logger import UsageRecord
 
 @dataclass(frozen=True)
 class LLMAnswer:
@@ -58,10 +58,15 @@ class ClaudeClient:
                 }
             ],
         )
+
         tool_use = next(
             (block for block in first_response.content if block.type == "tool_use"),
             None,
         )
+
+        total_input_tokens = first_response.usage.input_tokens
+        total_output_tokens = first_response.usage.output_tokens
+
         if tool_use is None:
             response = first_response
         else:
@@ -97,35 +102,33 @@ class ClaudeClient:
                 ],
             )
 
+            total_input_tokens += response.usage.input_tokens
+            total_output_tokens += response.usage.output_tokens
+
         latency_ms = (perf_counter() - start_at) * 1000
 
         answer = self._extract_text(response.content)
 
-        input_tokens = response.usage.input_tokens
-        output_tokens = response.usage.output_tokens
+        estimated_cost = Pricing().estimate_cost(input_tokens=total_input_tokens, output_tokens=total_output_tokens)
+        print(f"estimated_cost is {estimated_cost}")
 
         # result
         result = LLMAnswer(
             answer=answer,
             model=response.model,
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
-            total_tokens=input_tokens + output_tokens,
+            input_tokens=total_input_tokens,
+            output_tokens=total_output_tokens,
+            total_tokens=total_input_tokens + total_output_tokens,
             latency_ms=round(latency_ms, 2),
         )
 
-        logger.info(
-            "llm_request_completed "
-            "model=%s "
-            "input_tokens=%d "
-            "output_tokens=%d "
-            "total_tokens=%d "
-            "latency_ms=%.2f",
-            result.model,
-            result.input_tokens,
-            result.output_tokens,
-            result.total_tokens,
-            result.latency_ms,
+        UsageRecord().logging(
+            model=result.model,
+            prompt_type=prompt_type.value,
+            input_tokens=result.input_tokens,
+            output_tokens=result.output_tokens,
+            latency_ms=result.latency_ms,
+            estimated_cost=estimated_cost
         )
         return result
 
