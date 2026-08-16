@@ -123,7 +123,7 @@ class ClaudeClient:
 
         UsageRecord().logging(
             model=result.model,
-            prompt_type=system_prompt,
+            prompt_type=prompt_type.value,
             input_tokens=result.input_tokens,
             output_tokens=result.output_tokens,
             latency_ms=result.latency_ms,
