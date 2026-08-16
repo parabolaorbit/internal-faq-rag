@@ -1,4 +1,3 @@
-import logging
 from dataclasses import dataclass
 from time import perf_counter
 import json
@@ -11,8 +10,8 @@ from faq_rag.prompt_builder import PromptBuilder
 from faq_rag.prompt_types import PromptType
 from faq_rag.schemas import FAQAnswer
 from faq_rag.tool_registry import TOOL_DEFINITIONS, TOOL_FUNCTIONS
-
-logger = logging.getLogger(__name__)
+from faq_rag.cost_calculator import Pricing
+from faq_rag.usage_logger import UsageRecord
 
 @dataclass(frozen=True)
 class LLMAnswer:
@@ -58,10 +57,17 @@ class ClaudeClient:
                 }
             ],
         )
+
         tool_use = next(
             (block for block in first_response.content if block.type == "tool_use"),
             None,
         )
+
+        input_tokens = first_response.usage.input_tokens
+        output_tokens = first_response.usage.output_tokens
+        estimated_cost = Pricing().estimate_cost(input_tokens=input_tokens, output_tokens=output_tokens)
+        print(f"estimated_cost is {estimated_cost}")
+
         if tool_use is None:
             response = first_response
         else:
@@ -103,6 +109,8 @@ class ClaudeClient:
 
         input_tokens = response.usage.input_tokens
         output_tokens = response.usage.output_tokens
+        estimated_cost = Pricing().estimate_cost(input_tokens=input_tokens, output_tokens=output_tokens)
+        print(f"estimated_cost is {estimated_cost}")
 
         # result
         result = LLMAnswer(
@@ -114,18 +122,13 @@ class ClaudeClient:
             latency_ms=round(latency_ms, 2),
         )
 
-        logger.info(
-            "llm_request_completed "
-            "model=%s "
-            "input_tokens=%d "
-            "output_tokens=%d "
-            "total_tokens=%d "
-            "latency_ms=%.2f",
-            result.model,
-            result.input_tokens,
-            result.output_tokens,
-            result.total_tokens,
-            result.latency_ms,
+        UsageRecord().logging(
+            model=result.model,
+            prompt_type=system_prompt,
+            input_tokens=result.input_tokens,
+            output_tokens=result.output_tokens,
+            latency_ms=result.latency_ms,
+            estimated_cost=estimated_cost
         )
         return result
 
