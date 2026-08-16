@@ -115,9 +115,9 @@ class ClaudeClient:
         result = LLMAnswer(
             answer=answer,
             model=response.model,
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
-            total_tokens=input_tokens + output_tokens,
+            input_tokens=total_input_tokens,
+            output_tokens=total_output_tokens,
+            total_tokens=total_input_tokens + total_output_tokens,
             latency_ms=round(latency_ms, 2),
         )
 

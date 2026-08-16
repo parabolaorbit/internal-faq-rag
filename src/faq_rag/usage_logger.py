@@ -2,7 +2,7 @@ import csv
 from datetime import datetime
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve.parent[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 LOG_PATH = PROJECT_ROOT / "logs" / "usage.csv"
 
 class UsageRecord:
