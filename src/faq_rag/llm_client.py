@@ -10,6 +10,7 @@ from faq_rag.config import Settings, get_settings
 from faq_rag.prompt_builder import PromptBuilder
 from faq_rag.prompt_types import PromptType
 from faq_rag.schemas import FAQAnswer
+from faq_rag.tool_registry import TOOL_DEFINITIONS, TOOL_FUNCTIONS
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,7 @@ class ClaudeClient:
         )
 
     def answer_question(self, question: str, prompt_type: PromptType) -> LLMAnswer:
+        # Question
         normalized_question = question.strip()
 
         if not normalized_question:
@@ -40,11 +42,15 @@ class ClaudeClient:
 
         builder = PromptBuilder()
         start_at = perf_counter()
+        system_prompt = builder.build_system_prompt(prompt_type=prompt_type)
 
-        response = self.client.messages.create(
+        # Tool Use
+        first_response = self.client.messages.create(
             model=self.settings.anthropic_model,
             max_tokens=1024,
-            system=builder.build_system_prompt(prompt_type=prompt_type),
+            system=system_prompt,
+            tools=TOOL_DEFINITIONS,
+            tool_choice={"type": "auto", "disable_parallel_tool_use": True},
             messages=[
                 {
                     "role": "user",
@@ -52,6 +58,44 @@ class ClaudeClient:
                 }
             ],
         )
+        tool_use = next(
+            (block for block in first_response.content if block.type == "tool_use"),
+            None,
+        )
+        if tool_use is None:
+            response = first_response
+        else:
+            print(f"Tool used: {tool_use.name}, Input: {tool_use.input}, ID: {tool_use.id}")
+
+            tool_output = TOOL_FUNCTIONS[tool_use.name](**tool_use.input) if tool_use else None
+
+            # Claude
+            response = self.client.messages.create(
+                model=self.settings.anthropic_model,
+                max_tokens=1024,
+                system=system_prompt,
+                tools=TOOL_DEFINITIONS,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": normalized_question,
+                    },
+                    {
+                        "role": "assistant",
+                        "content": first_response.content,
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "tool_result",
+                                "tool_use_id": tool_use.id,
+                                "content": str(tool_output),
+                            }
+                        ]
+                    }
+                ],
+            )
 
         latency_ms = (perf_counter() - start_at) * 1000
 
@@ -60,6 +104,7 @@ class ClaudeClient:
         input_tokens = response.usage.input_tokens
         output_tokens = response.usage.output_tokens
 
+        # result
         result = LLMAnswer(
             answer=answer,
             model=response.model,

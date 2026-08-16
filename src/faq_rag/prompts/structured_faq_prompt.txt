@@ -17,3 +17,10 @@
 - 根拠がない内容は推測しない
 - 不明な場合は confidence を low にする
 - 追加情報が必要なら needs_more_information を true にする
+
+利用可能なTool:
+
+- get_current_date
+- calculate
+
+必要なら利用してください。
