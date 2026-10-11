@@ -35,9 +35,9 @@ def check_similarity(chunk_vectors, chunks):
             (score, chunk)
         )
 
-        results.sort(
-            key=lambda item:item[0],
-            reverse=True,)
+    results.sort(
+        key=lambda item:item[0],
+        reverse=True,)
 
     for score, chunk in results:
         print(
