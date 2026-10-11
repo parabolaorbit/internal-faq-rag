@@ -2,18 +2,38 @@ class TextChunker:
     def __init__(
             self,
             chunk_size: int = 100,
+            chunk_overlap: int = 0,
     ) -> None:
         if chunk_size <= 0:
             raise ValueError(
                 "chunk_size must be greater than 0"
             )
-        self.chunk_size = chunk_size
 
-    def split(self, text: str) -> list[str]:
+        if chunk_overlap < 0:
+            raise ValueError(
+                "chunk_overlap must be greater than or equal to 0"
+            )
+
+        if chunk_overlap >= chunk_size:
+            raise ValueError(
+                "chunk_overlap must be less than chunk_size"
+            )
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
+
+    def split(
+            self, 
+            text: str
+        ) -> list[str]:
         normalized_text = text.strip()
 
         if not normalized_text:
             return []
+
+        step = (
+            self.chunk_size
+            - self.chunk_overlap
+        )
 
         return [
             normalized_text[
@@ -22,6 +42,6 @@ class TextChunker:
             for i in range(
                 0,
                 len(normalized_text),
-                self.chunk_size,
+                step,
             )
         ]
