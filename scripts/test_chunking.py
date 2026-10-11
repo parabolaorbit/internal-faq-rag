@@ -11,9 +11,56 @@ Ctrl+Alt+Deleteを押してパスワード変更を選択してください。
 在宅勤務を行う場合は、
 前営業日までに上長の承認を取得してください。
 """
+def check_similarity(chunk_vectors, chunks):
+    query = "経費精算の締切日はいつですか？"
+
+    query_vector = client.embed(query)
+
+    from faq_rag.similarity import (
+        cosine_similarity,
+    )
+
+    results = []
+
+    for chunk, vector in zip(
+        chunks,
+        chunk_vectors,
+    ):
+        score = cosine_similarity(
+            query_vector,
+            vector,
+        )
+
+        results.append(
+            (score, chunk)
+        )
+
+    results.sort(
+        key=lambda item:item[0],
+        reverse=True,)
+
+    for score, chunk in results:
+        print(
+            f"\n--- Score: {score:.4f} ---"
+        )
+        print(chunk)
+
+    whole_vector = client.embed(
+        document
+    )
+
+
+    whole_score = cosine_similarity(
+        query_vector,
+        whole_vector,
+    )
+
+    print(
+        f"whole document: {whole_score:.4f}"
+    )
 
 from faq_rag.chunker import TextChunker
-
+# Day78
 chunker = TextChunker(
     chunk_size=80
 )
@@ -40,45 +87,28 @@ chunk_vectors = [
     for chunk in chunks
 ]
 
-query = "経費精算の締切日はいつですか？"
+check_similarity(chunk_vectors, chunks)
 
-query_vector = client.embed(query)
-
-from faq_rag.similarity import (
-    cosine_similarity,
+# Day79
+chunker = TextChunker(
+    chunk_size=80,
+    chunk_overlap=20,
 )
 
-results = []
+chunks = chunker.split(document)
 
-for chunk, vector in zip(
+for index, chunk in enumerate(
     chunks,
-    chunk_vectors,
+    start=1,
 ):
-    score = cosine_similarity(
-        query_vector,
-        vector,
-    )
-
-    results.append(
-        (score, chunk)
-    )
-
-for score, chunk in results:
     print(
-        f"\n--- Score: {score:.4f} ---"
+        f"\n--- Chunk {index} ---"
     )
     print(chunk)
 
-whole_vector = client.embed(
-    document
-)
+chunk_vectors = [
+    client.embed(chunk)
+    for chunk in chunks
+]
 
-
-whole_score = cosine_similarity(
-    query_vector,
-    whole_vector,
-)
-
-print(
-    f"whole document: {whole_score:.4f}"
-)
+check_similarity(chunk_vectors, chunks)
