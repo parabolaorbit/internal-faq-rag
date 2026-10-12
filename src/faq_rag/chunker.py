@@ -45,3 +45,12 @@ class TextChunker:
                 step,
             )
         ]
+
+class ParagraphChunker:
+    def split(self, text: str) -> list[str]:
+        return [
+            paragraph.strip()
+            for paragraph in text.split("\n\n")
+            if paragraph.strip()
+        ]
+   

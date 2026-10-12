@@ -11,6 +11,7 @@ Ctrl+Alt+Deleteを押してパスワード変更を選択してください。
 在宅勤務を行う場合は、
 前営業日までに上長の承認を取得してください。
 """
+ 
 def check_similarity(chunk_vectors, chunks):
     query = "経費精算の締切日はいつですか？"
 
